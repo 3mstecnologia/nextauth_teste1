@@ -1,22 +1,39 @@
 import Head from "next/head";
 import Image from "next/image";
 import styles from "../styles/Home.module.css";
-import { useSession } from "next-auth/react";
+import { signIn, signOut, useSession, getSession } from "next-auth/react";
 
-export default function Home() {
-  const { data: session } = useSession();
+export const getServerSideProps = async ({ req }) => {
+  //console.log(req)
+  const  session  = await getSession({ req });
+  console.log(session)
   if (session) {
-    var usuario = {
-      sessao: session.user,
-      ra: "123456",
+    return {
+      props: {
+        session,
+      },
     };
-    return (
-      <div>
-        ola
-        {console.log(usuario)}
-      </div>
-    );
-  } else {
-    return <div>Nao esta logado</div>;
+  }else{
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      }
+    }
   }
 }
+
+
+
+
+
+export default function Home({props}) {
+      console.log(props)
+      return(
+      <div>
+        ola 
+        <button onClick={() => signOut()}>Sign out</button>
+      </div>
+      )
+  }
+

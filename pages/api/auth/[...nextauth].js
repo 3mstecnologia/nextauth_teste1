@@ -1,35 +1,70 @@
 import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials"
+import axios from 'axios'
 
 export default NextAuth({
+  
+  
   callbacks: {
-    async signIn({ account, profile }) {
-      if (account.provider === "google") {
-        return (
-          profile.email_verified &&
-          profile.email.endsWith("@uniplaclages.edu.br")
-        );
+    jwt: ({ token, user }) => {
+      if (user){
+        token = user
       }
-      return true; // Do different verification for other providers that don't have `email_verified`
+    return token
+    },
+    session: ({ session, token }) => {
+      if (token){
+        session = token
+      }
+      return session
     },
   },
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code",
-        },
-      },
-    }),
-  ],
-  session: {
-    jwt: true,
-  },
+  
+  secret: process.env.NEXT_PUBLIC_SECRET,
   jwt: {
-    maxAge: 60 * 60 * 24 * 30, // 1 month
+    secret: process.env.NEXT_PUBLIC_SECRET,
+    encryption: true
   },
+
+
+
+
+
+  providers: [
+    CredentialsProvider({
+      // The name to display on the sign in form (e.g. 'Sign in with...')
+      name: 'Ra e Senha',
+      // The credentials is used to generate a suitable form on the sign in page.
+      // You can specify whatever fields you are expecting to be submitted.
+      // e.g. domain, username, password, 2FA token, etc.
+      // You can pass any HTML attribute to the <input> tag through the object.
+      credentials: {
+        ra: { label: "ra", type: "text", placeholder: "ra" },
+        senha: {  label: "Senha", type: "password" }
+      },
+      async authorize(credentials, req) {
+   
+        const res = await axios.post('http://172.16.248.106:4448/validaLogin', {
+          
+            user: {
+              raVar: credentials.ra,
+              senhaVar: credentials.senha
+            }
+        });
+          
+        const user = await res.data
+  
+        // If no error and we have user data, return it
+        if (user) {
+          return user
+        }else{
+          console.log("erro")
+        // Return null if user data could not be retrieved
+        return null
+        }
+      }
+    })
+  ],
+
+  
 });
